@@ -203,6 +203,237 @@ int main(int argc, char *argv[])
     return a.exec();
 }
 
+void Branch(Matrix<double> &x,Matrix<double> &x2,Matrix<double> &N_or,Matrix<double> &b_or,Matrix<double> &cN_or,int iter,Matrix<double> &z,Matrix<double> &z2,int range) //B,N,b,xN,cN,cB,iter,x_B,x_N
+{
+
+    int check=-1;
+    for(int i =0;i<x.getRows();i++)
+    {
+        if(x2.get(i,0)!=(int)x2.get(i,0))
+        {
+            check=i;
+            break;
+        }
+    }
+    if(check==-1)
+    {
+        if(z2.get(0,0)>z.get(0,0))
+        {
+            z.put(0,0,z2.get(0,0));
+            x=x2;
+        }
+
+        return;
+    }
+
+    Matrix<double> N(N_or.getRows()+1,N_or.getColumns());
+    Matrix<double> b(b_or.getRows()+1,1);
+    Matrix<double> cN = cN_or;
+    int e=b.getRows();
+    int v=N.getColumns();
+    Matrix<double> B(e,e);
+    Matrix<double> xN(v,1);
+    Matrix<double> cB(1,e);
+    Matrix<double> N_or2=N;
+    Matrix<double> b_or2=b;
+    Matrix<double> x_B(e,1);//Symbol Matrixes
+    Matrix<double> x_N(v,1);
+
+for(int r=0;r<range;r++)
+{
+    for(int i=0;i<N_or.getRows();i++)//Left side
+    {
+        for(int j=0;j<N_or.getColumns();j++)
+        {
+            N.put(i,j,N_or.get(i,j));
+        }
+    }
+
+    for(int i=0;i<N.getColumns();i++)
+    {
+        if(i==check)
+        {
+            N.put(N.getRows()-1,i,1);
+        }
+        else
+        {
+            N.put(N.getRows()-1,i,0);
+        }
+    }
+    for(int i=0;i<b_or.getRows();i++)
+    {
+        for(int j=0;j<b_or.getColumns();j++)
+        {
+            b.put(i,j,b_or.get(i,j));
+        }
+    }
+    b.put(b_or.getRows(),0,floor(x2.get(check,0))-r);
+
+
+
+    for(int i =0;i<e;i++)
+    {
+        for(int j=0;j<e;j++)
+        {
+            if(i==j)
+            {
+                B.put(i,j,1);
+            }
+            else
+            {
+                B.put(i,j,0);
+            }
+        }
+    }
+
+    for(int i=0;i<v;i++)
+    {
+        xN.put(i,0,0);
+    }
+    for(int i=0;i<e;i++)
+    {
+        cB.put(0,i,0);
+    }
+
+    for(int i=0;i<v;i++)
+    {
+        x_N.put(i,0,i+1);
+    }
+    for(int i=0;i<e;i++)
+    {
+        x_B.put(i,0,v+i+1);
+    }
+
+    N_or2=N;
+    b_or2=b;
+    cN=cN_or;
+
+
+    if(Simplex(B,N,b,xN,cN,cB,iter,x_B,x_N))
+    {
+        Matrix<double> xB = B.getInverse()*b -B.getInverse()*N*xN;
+        z2=cB*xB+cN*xN;
+
+        for(int i=0;i<v;i++)
+        {
+           if(x_N.get(i,0)<=v)
+           {
+               x2.put(x_N.get(i,0)-1,0,xN.get(i,0));
+           }
+        }
+        for(int i=0;i<e;i++)
+        {
+           if(x_B.get(i,0)<=v)
+           {
+               x2.put(x_B.get(i,0)-1,0,xB.get(i,0));
+           }
+        }
+
+        if(x2.get(check,0)==(int)x2.get(check,0))
+        {
+             Branch(x,x2,N_or2,b_or2,cN_or,iter,z,z2,range);
+        }
+    }
+}
+
+
+for(int r=0;r<range;r++)
+{
+    for(int i=0;i<N_or.getRows();i++)//Right side
+    {
+        for(int j=0;j<N_or.getColumns();j++)
+        {
+            N.put(i,j,N_or.get(i,j));
+        }
+    }
+
+    for(int i=0;i<N.getColumns();i++)
+    {
+        if(i==check)
+        {
+            N.put(N.getRows()-1,i,-1);
+        }
+        else
+        {
+            N.put(N.getRows()-1,i,0);
+        }
+    }
+    for(int i=0;i<b_or.getRows();i++)
+    {
+        for(int j=0;j<b_or.getColumns();j++)
+        {
+            b.put(i,j,b_or.get(i,j));
+        }
+    }
+    b.put(b_or.getRows(),0,-(r+1+floor(x.get(check,0))));
+
+
+    for(int i =0;i<e;i++)
+    {
+        for(int j=0;j<e;j++)
+        {
+            if(i==j)
+            {
+                B.put(i,j,1);
+            }
+            else
+            {
+                B.put(i,j,0);
+            }
+        }
+    }
+
+    for(int i=0;i<v;i++)
+    {
+        xN.put(i,0,0);
+    }
+    for(int i=0;i<e;i++)
+    {
+        cB.put(0,i,0);
+    }
+
+    for(int i=0;i<v;i++)
+    {
+        x_N.put(i,0,i+1);
+    }
+    for(int i=0;i<e;i++)
+    {
+        x_B.put(i,0,v+i+1);
+    }
+    N_or2=N;
+    b_or2=b;
+    cN=cN_or;
+
+    if(Simplex(B,N,b,xN,cN,cB,iter,x_B,x_N))
+    {
+        Matrix<double> xB = B.getInverse()*b -B.getInverse()*N*xN;
+        z2=cB*xB+cN*xN;
+
+        for(int i=0;i<v;i++)
+        {
+           if(x_N.get(i,0)<=v)
+           {
+               x2.put(x_N.get(i,0)-1,0,xN.get(i,0));
+           }
+        }
+        for(int i=0;i<e;i++)
+        {
+           if(x_B.get(i,0)<=v)
+           {
+               x2.put(x_B.get(i,0)-1,0,xB.get(i,0));
+           }
+        }
+
+
+        if(x2.get(check,0)==(int)x2.get(check,0))
+        {
+             Branch(x,x2,N_or2,b_or2,cN_or,iter,z,z2,range);
+        }
+    }
+}
+
+}
+
 bool Base(Matrix<double> &B,Matrix<double> &N,Matrix<double> &b,Matrix<double> &xN,Matrix<double> &cN,Matrix<double> &cB,int index,Matrix<double> & x_B,Matrix<double> &x_N)
 {
     int e=b.getRows();
